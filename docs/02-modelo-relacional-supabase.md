@@ -85,11 +85,11 @@ Catalogo de grupos do usuario.
 
 ### `expense_categories`
 
-Catalogo de categorias/subcategorias.
+Catalogo de categorias. Na fase atual da V2, categorias ficam diretamente abaixo de grupos; subcategorias estao fora do escopo operacional.
 
 - `code`.
 - `group_id`.
-- `parent_category_id`.
+- `parent_category_id`: coluna mantida para compatibilidade evolutiva/legada, mas gravada como `null` pela aplicacao atual.
 - `separate_from_expense_totals`.
 - metadados visuais e ordenacao.
 
@@ -100,12 +100,12 @@ Lancamentos financeiros.
 - `title`.
 - `amount_cents`.
 - `currency`.
-- `expense_date`.
+- `expense_date`: data informativa em que a despesa foi feita/lancada.
+- `month_start`: mes operacional da despesa, definido pelo mes selecionado na barra superior quando a despesa e criada.
 - `due_date`.
 - `paid`.
 - `wallet_id`.
 - `category_id`.
-- `month_start` gerado a partir de `expense_date`.
 - timestamps, soft delete e `sync_version`.
 
 ## Compatibilidade com o sistema atual
@@ -127,4 +127,3 @@ Criar views para leituras comuns:
 - `monthly_wallet_payments`: pagamentos por data/carteira.
 
 Essas views devem usar `security_invoker = true` para respeitar RLS das tabelas base.
-

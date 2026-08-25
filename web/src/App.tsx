@@ -879,7 +879,13 @@ function AuthScreen({ onNotify }: { onNotify: NotifyFn }) {
 
     const result = mode === 'SIGN_IN'
       ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
+      : await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin
+        }
+      });
 
     if (result.error) {
       onNotify({ tone: 'error', text: result.error.message });

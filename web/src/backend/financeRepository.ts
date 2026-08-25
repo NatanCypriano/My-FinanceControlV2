@@ -92,6 +92,7 @@ type ExpenseRow = {
 
 const TEMPLATE_ID_PREFIX = '00000000-0000-4000-8000-00000000';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const JWT_ISSUED_AT_FUTURE_RETRY_DELAYS_MS = [500, 1000, 2000];
 
 export async function loadFinanceState(userId: string): Promise<FinanceState> {
   const client = requireSupabase();
@@ -157,13 +158,31 @@ function requireSupabase(): SupabaseClient {
 }
 
 async function run<T = unknown>(request: SupabaseResponse): Promise<T> {
-  const { data, error } = await request;
-  if (error) throw new Error(error.message);
-  return data as T;
+  for (let attempt = 0; attempt <= JWT_ISSUED_AT_FUTURE_RETRY_DELAYS_MS.length; attempt += 1) {
+    const { data, error } = await request;
+    if (!error) return data as T;
+
+    const retryDelay = JWT_ISSUED_AT_FUTURE_RETRY_DELAYS_MS[attempt];
+    if (!isJwtIssuedAtFutureError(error) || retryDelay === undefined) {
+      throw new Error(error.message);
+    }
+
+    await delay(retryDelay);
+  }
+
+  throw new Error('Could not complete Supabase request.');
 }
 
 async function singleOrNull<T>(request: SupabaseResponse): Promise<T | null> {
   return run<T | null>(request);
+}
+
+function isJwtIssuedAtFutureError(error: SupabaseError): boolean {
+  return error.message.toLowerCase().includes('jwt issued at future');
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
 async function ensureBaseRows(client: SupabaseClient, userId: string): Promise<void> {
